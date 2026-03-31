@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 import requests
@@ -11,12 +11,11 @@ from .core.database import engine, get_db
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Assesment Test DMS",
-    description="Sistem klasifikasi tiket otomatis menggunakan LLM Agent"
+    title="Assesment Test DMS"
 )
 
 @app.post("/tickets", response_model=TicketResponse)
-def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
+def create_ticket(ticket: TicketCreate, background_tasks: BackgroundTasks,db: Session = Depends(get_db)):
 
     new_ticket = Ticket(
         title=ticket.title,
@@ -28,16 +27,19 @@ def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_ticket)
 
-    try:
-        n8n_url = os.getenv("N8N_WEBHOOK_URL")
-        if n8n_url:
-            requests.post(n8n_url, json={
+    def send_to_n8n():
+        try:
+            n8n_url = os.getenv("N8N_WEBHOOK_URL")
+            if n8n_url:
+                requests.post(n8n_url, json={
                 "title": new_ticket.title,
                 "ticket_id": new_ticket.id,
                 "description": new_ticket.description
             })
-    except Exception as e:
-        print(f"Gagal menghubungi n8n: {e}")
+        except Exception as e:
+            print(f"Gagal menghubungi n8n: {e}")
+
+    background_tasks.add_task(send_to_n8n)
 
     return new_ticket
 

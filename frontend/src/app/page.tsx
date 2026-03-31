@@ -9,6 +9,9 @@ export default function Home() {
         <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight drop-shadow-md">
           DMS Ticket System
         </h1>
+        <a href="/tickets"></a>
+        
+
         <div className="flex items-center">
           <Switch />
         </div>

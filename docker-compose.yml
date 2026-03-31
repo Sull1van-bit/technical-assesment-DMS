@@ -24,6 +24,8 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - WEBHOOK_URL=http://localhost:5679/
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
