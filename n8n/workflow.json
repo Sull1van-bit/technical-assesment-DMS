@@ -1,0 +1,134 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "testDMS",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -688,
+        16
+      ],
+      "id": "5607e5dc-7475-48fb-9f96-65b9d59c04c8",
+      "name": "Webhook",
+      "webhookId": "12fc41d0-7c85-4ac5-8ee5-3297aa3731d3"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:8000/tickets/{{ $('Webhook').item.json.body.ticket_id }}/analysis",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n({\n  \"urgency_level\": $json.urgency_level,\n  \"severity_score\": Number($json.severity_score),\n  \"reasoning\": $json.reasoning,\n  \"status\": \"analyzed\"\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "171327f8-fb66-4f1e-ad6e-6ca82d739663",
+      "name": "HTTP Request",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n({\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are a Senior SRE. Analyze this ticket. RULES: 1. If Title/Description is placeholder like 'string' or 'test', set urgency_level to 'Low', severity_score to 0, and reasoning to 'Invalid input detected.' 2. For real issues: Critical (90-100) for outage, High (70-89) for broken features, Medium (40-69) for bugs, Low (0-39) for UI. DATA: Title: \" + ($node[\"Webhook\"].json.body.title || \"No Title\") + \" Description: \" + ($node[\"Webhook\"].json.body.description || \"No Description\") + \" OUTPUT: Strict JSON only.\"\n        }\n      ]\n    }\n  ]\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -464,
+        16
+      ],
+      "id": "dffc3fb0-6692-4c76-84e0-97dc01a42fc4",
+      "name": "HTTP Request1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "let result = {\n  urgency_level: \"Unknown\",\n  severity_score: 0,\n  reasoning: \"AI analysis failed or returned no data.\",\n  status: \"analyzed\"\n};\n\ntry {\n  const inputData = $input.first().json;\n\n  if (inputData.error) {\n    result.reasoning = \"Error Log: \" + (inputData.error.message || \"API Error\");\n  } \n  \n  const rawText = inputData?.candidates?.[0]?.content?.parts?.[0]?.text;\n\n  if (rawText) {\n    const cleanJson = rawText.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n    const parsed = JSON.parse(cleanJson);\n\n    result.urgency_level = parsed.urgency_level || \"Unknown\";\n    result.severity_score = parsed.severity_score || 0;\n    result.reasoning = parsed.reasoning || \"Analysis complete.\";\n  }\n} catch (error) {\n  result.reasoning = \"Error processing output: \" + error.message;\n}\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "5ffd6c8e-8943-4877-8242-94f777a1a7f5",
+      "name": "Code in JavaScript",
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c29391aa-554f-4445-8770-7b383d2b4138",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d7e4f76939c28d6a143d5eeef46b39be565732dc16cfc4d6354a0f603e90e172"
+  },
+  "id": "Asmk3oNJJM00ms7s",
+  "tags": []
+}
