@@ -123,3 +123,26 @@ npm run dev
 ```
 
 Aplikasi akan berjalan di `http://localhost:3000`.
+
+---
+
+## Unit Test
+
+### 1. Test Backend (FastAPI)
+Backend menggunakan **pytest** dan **SQLite in-memory** (bersifat *mock*) agar tidak mengotori database asli. Selain itu, *webhook* ke n8n juga di-*mocking* agar tidak terkirim secara nyata saat test dijalankan.
+
+```bash
+cd backend
+
+pytest
+```
+*Tip: Jika menggunakan PowerShell dan tidak menemukan module, jalankan `set PYTHONPATH=%CD%; pytest`*
+
+### 2. Test Frontend (Next.js)
+Frontend menggunakan **Jest** dan **React Testing Library** (@testing-library/react) untuk simulasi *render* komponen dan tes interaksi DOM.
+
+```bash
+cd frontend
+npm install
+npm test
+```

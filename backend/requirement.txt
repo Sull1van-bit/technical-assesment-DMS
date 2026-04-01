@@ -5,3 +5,7 @@ pymysql
 pydantic
 python-dotenv
 requests
+
+# Untuk Testing
+pytest
+httpx

@@ -17,6 +17,8 @@ build/
 .mypy_cache/
 .ruff_cache/
 *.log
+test.db
+test.db-journal
 node_modules/
 .pnp
 .pnp.*
